@@ -114,7 +114,7 @@ print("The mean amount of elements per class is", cls_mean)
 print("The standard deviation in the element per class distribution is", cls_std)
 
 # 68% - 95% - 99% rule, the 68% of the data should be cls_std away from the mean and so on
-# https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
+
 if cls_std > cls_mean * (0.6827 / 2):
     print("The standard deviation is high")
     
@@ -241,7 +241,7 @@ stratify in train_test_split ensures that there is no overrepresentation of clas
 It is used to avoid some labels being overrepresented in the val set.
 
 Note: only works with sklearn version > 0.17
-In [13]:
+
 from sklearn.model_selection import train_test_split
 
 # fix random seed for reproducibility
@@ -260,16 +260,21 @@ xtrain, xval, ytrain, yval = train_test_split(xtrain,
                                              )
 
 print(xtrain.shape, ytrain.shape, xval.shape, yval.shape)
-(37800, 28, 28, 1) (37800, 10) (4200, 28, 28, 1) (4200, 10)
+
+
 Summary
 The available data is now divided as follows:
 
 Train data: images (xtrain) and labels (ytrain), 90% of the available data
 Validation data: images (xval) and labels (yval), 10% of the available data
+
+
+
+
 2. CNN
+
 In this section the CNN is defined, including architecture, optimizers, metrics, learning rate reductions, data augmentation... Then it is compiled and fit to the training set.
 
-In [14]:
 from keras import backend as K
 
 # for the architecture
@@ -281,20 +286,11 @@ from keras.layers import Conv2D, MaxPool2D, AvgPool2D
 from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ReduceLROnPlateau
+
+
 2.1. Define model architecture
+
 Below is an example CNN architecture:
-
-CNN architecture
-
-My final CNN architechture is:
-
-In → [ [Conv2D → relu]*2 → MaxPool2D → Dropout ]*2 → Flatten → Dense → Dropout → Out
-I'd like to encourage everyone who wants to learn about CNNs to begin with a simpler one, such as
-
-In → [Conv2D → relu] → MaxPool2D → Dropout → Flatten → Dense → Dropout → Out
-, check the performance and keep adding layers or tweaking the parameters until you reach an architecture (that may or may not be like mine) with a val_acc of 0.996 more or less, trying to improve that takes much more time and it's really about the details, but of course feel free to try it out. I just encourage that you build your own model and do your own tests, instead of looking at an already well-performing model and using that.
-
-In my case I started with the simple architecture, kept a log where I wrote down the loss and accuracy results, changed one thing at a time, checked performance and how it changed regarding the previous version, wrote down the changes I had made and how the result changed, and made further changes based on that.
 
 More info on CNN architectures here: How to choose CNN Architecture MNIST
 
@@ -321,65 +317,38 @@ AvgPool2D: extracts smooth features
 
 My personal conclusion then is that for binarized images, with noticeable edge differences, MaxPool performs better.
 
-Dropout: you can read the theory on the Internet, it's a useful tool to reduce overfitting. The net becomes less sensitive to the specific weights of neurons and is more capable of better generalization and less likely to overfit to the train data. The optimal dropout value in Conv layers is 0.2, and if you want to implement it in the dense layers, its optimal value is 0.5: Dropout in ML
-In [15]:
+Dropout: you can read the theory on the Internet, it's a useful tool to reduce overfitting. The net becomes less sensitive to the specific weights of neurons and is more capable of better generalization and less likely to overfit to the train data. The optimal dropout value in Conv layers is 0.2, and if you want to implement it in the dense layers, its optimal value is 0.5: 
+
 model = Sequential()
 
-dim = 28
-nclasses = 10
+model.add(Conv2D(32,(5,5), padding='same',
+                 activation='relu', input_shape =(28,28,1)))
+model.add(Conv2D(32,(5,5), padding='same',
+                activation='relu'))
+model.add(MaxPool2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
 
-model.add(Conv2D(filters=32, kernel_size=(5,5), padding='same', activation='relu', input_shape=(dim,dim,1)))
-model.add(Conv2D(filters=32, kernel_size=(5,5), padding='same', activation='relu',))
-model.add(MaxPool2D(pool_size=(2,2), strides=(2,2)))
-model.add(Dropout(0.2))
 
-model.add(Conv2D(filters=64, kernel_size=(5,5), padding='same', activation='relu'))
-model.add(Conv2D(filters=64, kernel_size=(5,5), padding='same', activation='relu'))
+model.add(Conv2D(64,(3,3), padding='same',
+                activation='relu'))
+model.add(Conv2D(64,(3,3), padding='same',
+                activation='relu'))
 model.add(MaxPool2D(pool_size=(2,2), strides=(2,2)))
-model.add(Dropout(0.2))
+model.add(Dropout(0.25))
+
 
 model.add(Flatten())
-model.add(Dense(120, activation='relu'))
-model.add(Dense(84, activation='relu'))
-model.add(Dense(nclasses, activation='softmax'))
-In [16]:
-model.summary()
-_________________________________________________________________
-Layer (type)                 Output Shape              Param #   
-=================================================================
-conv2d_1 (Conv2D)            (None, 28, 28, 32)        832       
-_________________________________________________________________
-conv2d_2 (Conv2D)            (None, 28, 28, 32)        25632     
-_________________________________________________________________
-max_pooling2d_1 (MaxPooling2 (None, 14, 14, 32)        0         
-_________________________________________________________________
-dropout_1 (Dropout)          (None, 14, 14, 32)        0         
-_________________________________________________________________
-conv2d_3 (Conv2D)            (None, 14, 14, 64)        51264     
-_________________________________________________________________
-conv2d_4 (Conv2D)            (None, 14, 14, 64)        102464    
-_________________________________________________________________
-max_pooling2d_2 (MaxPooling2 (None, 7, 7, 64)          0         
-_________________________________________________________________
-dropout_2 (Dropout)          (None, 7, 7, 64)          0         
-_________________________________________________________________
-flatten_1 (Flatten)          (None, 3136)              0         
-_________________________________________________________________
-dense_1 (Dense)              (None, 120)               376440    
-_________________________________________________________________
-dense_2 (Dense)              (None, 84)                10164     
-_________________________________________________________________
-dense_3 (Dense)              (None, 10)                850       
-=================================================================
-Total params: 567,646
-Trainable params: 567,646
-Non-trainable params: 0
-_________________________________________________________________
-This summary shows the summary of the model, displaying each layer with the shape of the output as well as the number of parameters it needs. The first dense layer is the one with the most parameters, since it maps the 3136 outputs of the Flatten layer to the 120 neurons of the Dense layer. Since the layer is a fully connected layer, the number of parameters is: 120 * 3136 + 120.
+model.add(Dense(256, activation='relu'))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+model.add(Dense(10, activation='softmax'))
 
-The amount of trainable parameters is roughly half a million, which is not that much considering the architecture has medium size and the input dimensions (28,28,3) are small.
+model.summary()
+
+
 
 2.2. Compile the model
+
 Optimizer: it represents the gradient descent algorithm, whose goal is to minimize the cost function to approach the minimum point. Adam optimizer is one of the best-performing algorithms: Adam: A Method for Stochastic Optimization. The default learning rate for the Adam optimizer is 0.001. Another optimizer choice may be RMSprop or SGD.
 
 Loss function: It is a measure of the overall loss in the network after assigning values to the parameters during the forward phase so it indicates how well the parameters were chosen during the forward propagation phase. This loss function requires the labels to be encoded as one-hot vectors which is why this step was taken back in 1.8.
@@ -391,12 +360,14 @@ A ML company has built a tool to identify terrorists among the population and th
 model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 
 
+
 2.3. Set other parameters
+
 Learning rate annealer
 
 This is a useful tool which reduces the learning rate when there is a plateau on a certain value, which you can specify. In this case the monitoring value is val_acc. When there is no change in val_acc in 3 epochs (patience), the learning rate is multiplied by 0.5 (factor). If the learning rate has the value of min_lr, it stops decreasing.
 
-In [18]:
+
 learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
                                  patience=3, 
                                  verbose=1, 
@@ -408,7 +379,7 @@ Data augmentation is a technique used to artificially make the training set bigg
 
 Beware that activating some features may be confusing for the network, imagine that when taking img1 and flipping it, it may be very similar to img2 which has a different label. With the digits 6 and 9 for example, if you take either and flip it vertically and horizontally, it becomes the other. So if you do that with the digit 9, flip it in both edges and tell the network that the digit is still a 9 when it actually is very similar to the images of the digit 6, the performance will drop considerably. So take into account the images and how activating the features may affect the labeling.
 
-In [19]:
+
 datagen = ImageDataGenerator(
           featurewise_center=False,            # set input mean to 0 over the dataset
           samplewise_center=False,             # set each sample mean to 0
@@ -432,7 +403,7 @@ Epochs: based on my experiments, the loss and accuracy get into a plateau at aro
 Batch_size: I skip the theory which you can read it on the Internet. I recommend that you try changing it and seeing the change in the loss and accuracy, in my case a batch_size of 16 turned out to be disastrous and the best case occurred when I set it to 64.
 
 epochs = 20
-batch_size = 128
+batch_size = 64
 
 
 2.4 Fit the model
