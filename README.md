@@ -1,24 +1,36 @@
 # MNIST-with-Keras-99.7-
 THE MNIST DATABASE  of handwritten digits Yann LeCun, Courant Institute, NYU
+Email me at tecknomart@yahoo.com if you need the MNIST_dataset.csv for train and test. 
 
 
 1. Data pre-processing
 
 1.1. Load data
+
 1.2. Check shape, data type
+
 1.3. Extract xtrain, ytrain
+
 1.4. Mean and std of classes
+
 1.5. Check nuls and missing values
+
 1.6. Normalization
+
 1.7. Reshape
+
 1.8. One hot encoding of label
+
 1.9. Split training and validation sets
 
 2. CNN
 
 2.1. Define model architecture
+
 2.2. Compile
+
 2.3. Set other parameters
+
 2.5. Fit model
 
 
